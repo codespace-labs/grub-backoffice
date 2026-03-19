@@ -1,0 +1,24 @@
+{
+  "name": "grub-backoffice",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@grub/contracts": "file:./packages/contracts",
+    "@supabase/supabase-js": "^2.99.2",
+    "next": "^15.3.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "typescript": "^5.9.2"
+  }
+}
