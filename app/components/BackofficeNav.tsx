@@ -1,9 +1,11 @@
 import Link from "next/link";
+import type { Route } from "next";
 
-const navItems = [
+const navItems: { href: Route; label: string }[] = [
   { href: "/", label: "Overview" },
   { href: "/events", label: "Eventos" },
   { href: "/quality", label: "Calidad" },
+  { href: "/scrapers", label: "Scrapers" },
   { href: "/sync", label: "Syncs" },
   { href: "/audit", label: "Auditoría" },
 ];

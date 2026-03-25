@@ -1,6 +1,6 @@
 import { LogoutButton } from "./LogoutButton";
 import { BackofficeNav } from "./BackofficeNav";
-import type { BackofficeRole } from "../../lib/auth";
+import type { BackofficeRole } from "../../lib/backoffice-types";
 
 export function BackofficeHeader({
   title,

@@ -1,17 +1,7 @@
 import "server-only";
 
-import { cookies } from "next/headers";
-import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "./auth-constants";
-
-export type BackofficeRole = "admin" | "operator" | "viewer";
-
-export interface BackofficeSession {
-  accessToken: string;
-  refreshToken?: string;
-  email: string | null;
-  role: BackofficeRole;
-  userId: string;
-}
+import type { BackofficeRole, BackofficeSession } from "./backoffice-types";
+import { resolveBackofficeAuth } from "./backoffice-session";
 
 interface SupabaseUserResponse {
   id: string;
@@ -26,7 +16,7 @@ interface SupabaseUserResponse {
 
 function resolveRole(user: SupabaseUserResponse): BackofficeRole {
   const rawRole = user.app_metadata?.role ?? user.user_metadata?.role ?? "viewer";
-  if (rawRole === "admin" || rawRole === "operator" || rawRole === "viewer") {
+  if (rawRole === "superadmin" || rawRole === "admin" || rawRole === "operator" || rawRole === "viewer") {
     return rawRole;
   }
   return "viewer";
@@ -40,18 +30,13 @@ export async function getBackofficeSession(): Promise<BackofficeSession | null> 
     return null;
   }
 
-  const cookieStore = await cookies();
-  const accessToken = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value?.trim();
-  const refreshToken = cookieStore.get(REFRESH_TOKEN_COOKIE)?.value?.trim();
-
-  if (!accessToken) {
-    return null;
-  }
+  const auth = await resolveBackofficeAuth();
+  if (!auth) return null;
 
   const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
     headers: {
       apikey: anonKey,
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${auth.accessToken}`,
     },
     cache: "no-store",
   });
@@ -63,8 +48,8 @@ export async function getBackofficeSession(): Promise<BackofficeSession | null> 
   const user = (await res.json()) as SupabaseUserResponse;
 
   return {
-    accessToken,
-    refreshToken,
+    accessToken: auth.accessToken,
+    refreshToken: auth.refreshToken ?? undefined,
     email: user.email ?? null,
     role: resolveRole(user),
     userId: user.id,

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getBackofficeSession } from "../../lib/auth";
 import { LoginForm } from "./LoginForm";
+import { BrandMark } from "../../components/backoffice/BrandMark";
 
 export default async function LoginPage() {
   const session = await getBackofficeSession();
@@ -31,9 +32,7 @@ export default async function LoginPage() {
         }}
       >
         <div style={{ display: "grid", gap: 8 }}>
-          <div style={{ color: "var(--muted)", fontSize: 13, textTransform: "uppercase", letterSpacing: 1.4 }}>
-            grub backoffice
-          </div>
+          <BrandMark />
           <h1 style={{ margin: 0, fontSize: 32 }}>Acceso de operaciones</h1>
           <p style={{ margin: 0, color: "var(--muted)", lineHeight: 1.6 }}>
             Inicia sesión con tu usuario admin, operator o viewer de Supabase Auth.

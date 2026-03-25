@@ -17,6 +17,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key de Supabase>
 - autenticar operadores reales vía Supabase Auth
 - listar usuarios del backoffice y administrar roles desde UI
 
+## Convenciones UI
+
+- no usar emojis como iconos en la interfaz
+- para iconografia usar solo `lucide-react`, que es la libreria oficial del backoffice
+- no mezclar otras librerias de iconos salvo que se acuerde explicitamente
+
 ## Roles
 
 El backoffice usa el JWT del usuario autenticado y los roles viven en Supabase Auth:

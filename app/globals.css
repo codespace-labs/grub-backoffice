@@ -1,13 +1,39 @@
-:root {
-  color-scheme: dark;
-  --bg: #080c14;
-  --panel: #111722;
-  --panel-border: #1f2937;
-  --text: #f8fafc;
-  --muted: #94a3b8;
-  --accent: #8b5cf6;
-  --good: #22c55e;
-  --warn: #f59e0b;
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    color-scheme: dark;
+
+    /* Legacy inline-style variables (keep for existing pages) */
+    --bg: #080c14;
+    --panel: #111722;
+    --panel-border: #1f2937;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --accent: #7133FF;
+    --good: #22c55e;
+    --warn: #f59e0b;
+
+    /* shadcn-compatible tokens (used by backoffice components) */
+    --background: 220 13% 5%;
+    --foreground: 213 31% 91%;
+    --card: 220 13% 8%;
+    --card-foreground: 213 31% 91%;
+    --popover: 220 13% 8%;
+    --popover-foreground: 213 31% 91%;
+    --primary: 247 100% 50%;  /* #7133FF — matches mobile brand color */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 215 20% 15%;
+    --secondary-foreground: 213 31% 91%;
+    --muted-foreground: 215 16% 57%;
+    --accent-foreground: 213 31% 91%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 213 31% 91%;
+    --border: 215 20% 15%;
+    --input: 215 20% 15%;
+    --ring: 247 100% 50%;
+    --radius: 0.75rem;
+  }
 }
 
 * {
@@ -26,4 +52,29 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+@theme {
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-muted: hsl(var(--secondary));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--secondary));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
 }
