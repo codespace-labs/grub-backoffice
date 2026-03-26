@@ -41,6 +41,7 @@ export type EventListItemDto = {
   availability_status?: string | null;
   is_active?: boolean;
   created_at?: string | null;
+  updated_at?: string | null;
   event_genres?: EventGenreDto[];
   presentation?: EventPresentationDto;
 };
@@ -100,8 +101,16 @@ export type AdminUserDto = {
   phone: string | null;
   role: AdminRole;
   is_verified: boolean;
+  is_banned?: boolean;
   created_at: string | null;
   last_sign_in_at: string | null;
+  source?: "backoffice" | "customer";
+  source_label?: string | null;
+  display_name?: string | null;
+  provider?: "google" | "apple" | "phone" | null;
+  avatar_url?: string | null;
+  clerk_user_id?: string | null;
+  editable?: boolean;
 };
 
 export type AuditLogDto = {

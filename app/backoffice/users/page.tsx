@@ -12,10 +12,12 @@ export default async function BackofficeUsersPage() {
   }
 
   let users: AdminUserDto[] = [];
+  let fetchError: string | null = null;
   try {
     users = await getAdminUsers(session.accessToken);
-  } catch {
-    users = [];
+  } catch (err) {
+    fetchError = err instanceof Error ? err.message : "Error al cargar usuarios";
+    console.error("[backoffice:users-page]", fetchError);
   }
 
   return (
@@ -23,9 +25,15 @@ export default async function BackofficeUsersPage() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Usuarios</h2>
         <p className="text-muted-foreground">
-          Gestiona los usuarios del backoffice
+          Gestiona el equipo del backoffice y visualiza clientes sincronizados desde la app
         </p>
       </div>
+      {fetchError && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <span className="font-medium">Error al cargar usuarios: </span>
+          {fetchError}
+        </div>
+      )}
       <UsersTable initialUsers={users} currentRole={session.role} />
     </div>
   );

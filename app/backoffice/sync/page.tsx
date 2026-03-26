@@ -22,6 +22,32 @@ function syncStatusVariant(
   }
 }
 
+function formatRunItems(
+  items: Array<{
+    source: string;
+    inserted_count: number;
+    updated_count: number;
+    skipped_count: number;
+    failed_count: number;
+  }>,
+) {
+  if (!items.length) return null;
+
+  return items
+    .map((item) => {
+      const parts = [
+        `${item.inserted_count} ins`,
+        `${item.updated_count} upd`,
+      ];
+
+      if (item.skipped_count > 0) parts.push(`${item.skipped_count} skip`);
+      if (item.failed_count > 0) parts.push(`${item.failed_count} fail`);
+
+      return `${item.source}: ${parts.join(" · ")}`;
+    })
+    .join(" | ");
+}
+
 export default async function BackofficeSyncPage() {
   const session = await getBackofficeSession();
   if (!session) redirect("/login");
@@ -73,9 +99,9 @@ export default async function BackofficeSyncPage() {
                     <p className="text-xs text-muted-foreground">
                       {event.date ? new Date(event.date).toLocaleDateString("es-PE", { day: "numeric", month: "short", year: "numeric" }) : "—"} · {event.city ?? "—"} · {event.source ?? "—"}
                     </p>
-                    {event.created_at ? (
+                    {event.updated_at || event.created_at ? (
                       <p className="text-xs text-muted-foreground/60">
-                        Scrapeado: {new Date(event.created_at).toLocaleString("es-PE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        Último cambio: {new Date(event.updated_at ?? event.created_at ?? "").toLocaleString("es-PE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                       </p>
                     ) : null}
                   </div>
@@ -106,20 +132,24 @@ export default async function BackofficeSyncPage() {
             <p className="text-sm text-muted-foreground">No hay corridas registradas.</p>
           ) : (
             runs.map((run) => (
-              <div
-                key={run.id}
-                className="flex flex-col gap-2 border-b border-border pb-4 last:border-0 last:pb-0 lg:flex-row lg:items-center lg:justify-between"
-              >
-                <div className="space-y-1">
-                  <p className="font-medium">{run.trigger_source}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Inicio: {new Date(run.started_at).toLocaleString("es-PE")}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Fin: {run.finished_at ? new Date(run.finished_at).toLocaleString("es-PE") : "en ejecución"}
-                  </p>
+              <div key={run.id} className="border-b border-border pb-4 last:border-0 last:pb-0">
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="space-y-1">
+                    <p className="font-medium">{run.trigger_source}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Inicio: {new Date(run.started_at).toLocaleString("es-PE")}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Fin: {run.finished_at ? new Date(run.finished_at).toLocaleString("es-PE") : "en ejecución"}
+                    </p>
+                  </div>
+                  <Badge variant={syncStatusVariant(run.status)}>{run.status}</Badge>
                 </div>
-                <Badge variant={syncStatusVariant(run.status)}>{run.status}</Badge>
+                {formatRunItems(run.items) ? (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {formatRunItems(run.items)}
+                  </p>
+                ) : null}
               </div>
             ))
           )}

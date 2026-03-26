@@ -3,7 +3,6 @@
 import type { CSSProperties, FormEvent } from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { backofficeSupabase } from "../../lib/supabase-browser";
 
 export function LoginForm() {
   const router = useRouter();
@@ -17,30 +16,20 @@ export function LoginForm() {
     setLoading(true);
     setError(null);
 
-    const { data, error: signInError } = await backofficeSupabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (signInError || !data.session) {
-      setError(signInError?.message ?? "No se pudo iniciar sesión");
-      setLoading(false);
-      return;
-    }
-
-    const sessionRes = await fetch("/api/auth/session", {
+    const sessionRes = await fetch("/api/auth/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
+        email,
+        password,
       }),
     });
 
     if (!sessionRes.ok) {
-      setError("No se pudo guardar la sesión del backoffice");
+      const payload = (await sessionRes.json().catch(() => null)) as { error?: string } | null;
+      setError(payload?.error ?? "No se pudo iniciar sesión");
       setLoading(false);
       return;
     }

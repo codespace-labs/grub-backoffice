@@ -34,6 +34,7 @@ export default async function BackofficeEventsPage() {
         initialEvents={events}
         initialError={initialError}
         accessToken={session.accessToken}
+        mode="upcoming"
       />
     </div>
   );

@@ -11,7 +11,21 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import type { EventListItemDto } from "@grub/contracts";
-import { format, parseISO } from "date-fns";
+import {
+  addDays,
+  endOfMonth,
+  endOfWeek,
+  format,
+  getTime,
+  isAfter,
+  isBefore,
+  isSameDay,
+  isWithinInterval,
+  parseISO,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+} from "date-fns";
 import { es } from "date-fns/locale";
 import { RefreshCw, Plus, ExternalLink, ChevronUp, ChevronDown, Pencil, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
@@ -40,6 +54,7 @@ interface EventsTableProps {
   initialEvents: EventListItemDto[];
   initialError?: string | null;
   accessToken: string;
+  mode?: "upcoming" | "past" | "all";
 }
 
 type SourceBadgeStyle = {
@@ -52,6 +67,9 @@ type SourceBadgeStyle = {
 type AdminEventsResponse = {
   events?: EventListItemDto[];
   event?: EventListItemDto;
+  ok?: boolean;
+  deleted_event_count?: number;
+  deleted_sync_run_count?: number;
   error?: string;
 };
 
@@ -124,10 +142,105 @@ function getSourceBadgeStyle(source: string | null | undefined): SourceBadgeStyl
   };
 }
 
+function eventMatchesFilters(
+  event: EventListItemDto,
+  params: {
+    query: string;
+    sourceFilter: string;
+    genreFilter: string;
+    statusFilter: string;
+    completenessFilter: string;
+    calendarFilter: string;
+    dateFrom: string;
+    dateTo: string;
+    mode: "upcoming" | "past" | "all";
+  },
+) {
+  const hasGenres = (event.event_genres?.length ?? 0) > 0;
+  const hasVenue = typeof event.venue === "string" && event.venue.trim().length > 0;
+  const genreSlugs = new Set(
+    (event.event_genres ?? [])
+      .map((relation) => relation.genres?.slug)
+      .filter((slug): slug is string => Boolean(slug)),
+  );
+  const eventDate = event.date ? parseISO(event.date) : null;
+  const now = new Date();
+  const todayStart = startOfDay(now);
+  const weekStart = startOfWeek(now, { locale: es });
+  const weekEnd = endOfWeek(now, { locale: es });
+  const monthStart = startOfMonth(now);
+  const monthEnd = endOfMonth(now);
+  const next30Days = addDays(todayStart, 30);
+
+  if (params.query) {
+    const q = params.query.toLowerCase();
+    if (!event.name.toLowerCase().includes(q)) return false;
+  }
+  if (params.sourceFilter !== "all" && event.source !== params.sourceFilter) return false;
+  if (params.genreFilter !== "all" && !genreSlugs.has(params.genreFilter)) return false;
+  if (params.statusFilter === "active" && !event.is_active) return false;
+  if (params.statusFilter === "inactive" && event.is_active) return false;
+  if (params.completenessFilter === "missing_genre" && hasGenres) return false;
+  if (params.completenessFilter === "missing_venue" && hasVenue) return false;
+  if (params.completenessFilter === "missing_genre_or_venue" && hasGenres && hasVenue) return false;
+  if (params.mode !== "all") {
+    if (!eventDate || Number.isNaN(eventDate.getTime())) return false;
+    if (params.mode === "upcoming" && isBefore(eventDate, todayStart)) return false;
+    if (params.mode === "past" && !isBefore(eventDate, todayStart)) return false;
+  }
+  if (params.calendarFilter !== "all") {
+    if (!eventDate || Number.isNaN(eventDate.getTime())) return false;
+
+    if (params.calendarFilter === "today" && !isSameDay(eventDate, now)) return false;
+    if (
+      params.calendarFilter === "week" &&
+      !isWithinInterval(eventDate, { start: weekStart, end: weekEnd })
+    ) return false;
+    if (
+      params.calendarFilter === "month" &&
+      !isWithinInterval(eventDate, { start: monthStart, end: monthEnd })
+    ) return false;
+    if (
+      params.calendarFilter === "next_30_days" &&
+      (isBefore(eventDate, todayStart) || isAfter(eventDate, next30Days))
+    ) return false;
+    if (params.calendarFilter === "past" && !isBefore(eventDate, todayStart)) return false;
+    if (params.calendarFilter === "upcoming" && isBefore(eventDate, todayStart)) return false;
+  }
+  if (params.dateFrom) {
+    if (!eventDate || Number.isNaN(eventDate.getTime())) return false;
+    const fromDate = startOfDay(parseISO(`${params.dateFrom}T00:00:00`));
+    if (isBefore(eventDate, fromDate)) return false;
+  }
+  if (params.dateTo) {
+    if (!eventDate || Number.isNaN(eventDate.getTime())) return false;
+    const toDateExclusive = addDays(startOfDay(parseISO(`${params.dateTo}T00:00:00`)), 1);
+    if (!isBefore(eventDate, toDateExclusive)) return false;
+  }
+
+  return true;
+}
+
+function compareEventsByDate(
+  left: EventListItemDto,
+  right: EventListItemDto,
+  mode: "upcoming" | "past" | "all",
+): number {
+  const leftDate = left.date ? parseISO(left.date) : null;
+  const rightDate = right.date ? parseISO(right.date) : null;
+
+  if (!leftDate && !rightDate) return left.name.localeCompare(right.name, "es");
+  if (!leftDate) return 1;
+  if (!rightDate) return -1;
+  if (mode === "past") return getTime(rightDate) - getTime(leftDate);
+  return getTime(leftDate) - getTime(rightDate);
+}
+
 export function EventsTable({
   initialEvents,
   initialError = null,
   accessToken,
+  mode = "all",
 }: EventsTableProps) {
   const [events, setEvents] = useState<EventListItemDto[]>(initialEvents);
   const [loading, setLoading] = useState(false);
@@ -139,8 +252,14 @@ export function EventsTable({
   const [genreFilter, setGenreFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [completenessFilter, setCompletenessFilter] = useState("all");
+  const [calendarFilter, setCalendarFilter] = useState(
+    mode === "past" ? "past" : mode === "upcoming" ? "upcoming" : "all",
+  );
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventListItemDto | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const deferredGlobalFilter = useDeferredValue(globalFilter);
 
   const markPending = useCallback((eventId: string, value: boolean) => {
@@ -160,6 +279,7 @@ export function EventsTable({
       const data = (await res.json().catch(() => ({}))) as AdminEventsResponse;
       if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
       setEvents(data.events ?? []);
+      setSelectedIds(new Set());
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "No se pudieron cargar los eventos.");
     } finally {
@@ -214,6 +334,11 @@ export function EventsTable({
     markPending(event.id, true);
     const previous = [...events];
     setEvents((current) => current.filter((item) => item.id !== event.id));
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      next.delete(event.id);
+      return next;
+    });
     try {
       const res = await fetch(`/api/admin/events/${event.id}`, {
         method: "DELETE",
@@ -232,6 +357,104 @@ export function EventsTable({
       markPending(event.id, false);
     }
   }, [events, markPending]);
+
+  const toggleSelectAll = useCallback((checked: boolean) => {
+    const visibleEvents = events.filter((event) => eventMatchesFilters(event, {
+      query: deferredGlobalFilter,
+      sourceFilter,
+      genreFilter,
+      statusFilter,
+      completenessFilter,
+      calendarFilter,
+      dateFrom,
+      dateTo,
+      mode,
+    }));
+
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      for (const event of visibleEvents) {
+        if (checked) next.add(event.id);
+        else next.delete(event.id);
+      }
+      return next;
+    });
+  }, [calendarFilter, completenessFilter, dateFrom, dateTo, deferredGlobalFilter, events, genreFilter, mode, sourceFilter, statusFilter]);
+
+  const toggleSelectOne = useCallback((eventId: string, checked: boolean) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (checked) next.add(eventId);
+      else next.delete(eventId);
+      return next;
+    });
+  }, []);
+
+  const handleBulkDeleteSelected = useCallback(async () => {
+    const selectedEvents = events.filter((event) => selectedIds.has(event.id));
+    if (!selectedEvents.length) return;
+
+    const names = selectedEvents.map((event) => event.name).slice(0, 3).join(", ");
+    const suffix = selectedEvents.length > 3 ? ` y ${selectedEvents.length - 3} más` : "";
+    const confirmed = window.confirm(
+      `Vas a eliminar ${selectedEvents.length} evento(s): ${names}${suffix}. Esta acción no se puede deshacer.`,
+    );
+    if (!confirmed) return;
+
+    setActionError(null);
+    const ids = selectedEvents.map((event) => event.id);
+    const previous = [...events];
+    setEvents((current) => current.filter((event) => !ids.includes(event.id)));
+    setSelectedIds(new Set());
+
+    try {
+      const res = await fetch("/api/admin/events", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      const data = (await res.json().catch(() => ({}))) as AdminEventsResponse;
+      if (!res.ok) throw new Error(data.error ?? `Delete failed: ${res.status}`);
+    } catch (err) {
+      console.error("Bulk delete failed:", err);
+      setEvents(previous);
+      setActionError(
+        err instanceof Error ? err.message : "No se pudieron eliminar los eventos seleccionados.",
+      );
+    }
+  }, [events, selectedIds]);
+
+  const handleDeleteBySource = useCallback(async () => {
+    if (sourceFilter === "all") return;
+
+    const confirmed = window.confirm(
+      `Vas a eliminar todos los eventos de la fuente "${sourceFilter}" y sus corridas de sync asociadas. Esta acción no se puede deshacer.`,
+    );
+    if (!confirmed) return;
+
+    setActionError(null);
+    const previous = [...events];
+    setEvents((current) => current.filter((event) => event.source !== sourceFilter));
+    setSelectedIds((current) => new Set(
+      [...current].filter((id) => previous.some((event) => event.id === id && event.source !== sourceFilter)),
+    ));
+
+    try {
+      const res = await fetch("/api/admin/events", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source: sourceFilter, delete_sync_runs: true }),
+      });
+      const data = (await res.json().catch(() => ({}))) as AdminEventsResponse;
+      if (!res.ok) throw new Error(data.error ?? `Delete failed: ${res.status}`);
+    } catch (err) {
+      console.error("Source delete failed:", err);
+      setEvents(previous);
+      setActionError(
+        err instanceof Error ? err.message : "No se pudo eliminar la fuente seleccionada.",
+      );
+    }
+  }, [events, sourceFilter]);
 
   const availableSources = useMemo(() => {
     return Array.from(new Set(events.map((event) => event.source).filter(Boolean))).sort() as string[];
@@ -255,7 +478,48 @@ export function EventsTable({
       .sort((a, b) => a.name.localeCompare(b.name, "es"));
   }, [events]);
 
+  const filteredData = useMemo(() => events.filter((event) => eventMatchesFilters(event, {
+    query: deferredGlobalFilter,
+    sourceFilter,
+    genreFilter,
+    statusFilter,
+    completenessFilter,
+    calendarFilter,
+    dateFrom,
+    dateTo,
+    mode,
+  })), [calendarFilter, completenessFilter, dateFrom, dateTo, events, deferredGlobalFilter, genreFilter, mode, sourceFilter, statusFilter]);
+
+  const allFilteredSelected = filteredData.length > 0
+    && filteredData.every((event) => selectedIds.has(event.id));
+  const sourceEventCount = useMemo(
+    () => sourceFilter === "all" ? 0 : events.filter((event) => event.source === sourceFilter).length,
+    [events, sourceFilter],
+  );
+
   const columns = useMemo<ColumnDef<EventListItemDto>[]>(() => [
+    {
+      id: "select",
+      header: () => (
+        <input
+          type="checkbox"
+          checked={allFilteredSelected}
+          onChange={(e) => toggleSelectAll(e.target.checked)}
+          className="accent-primary"
+          aria-label="Seleccionar todos"
+        />
+      ),
+      cell: ({ row }) => (
+        <input
+          type="checkbox"
+          checked={selectedIds.has(row.original.id)}
+          onChange={(e) => toggleSelectOne(row.original.id, e.target.checked)}
+          className="accent-primary"
+          aria-label={`Seleccionar ${row.original.name}`}
+        />
+      ),
+      size: 36,
+    },
     {
       id: "cover",
       header: "",
@@ -296,6 +560,8 @@ export function EventsTable({
     {
       accessorKey: "date",
       header: "Fecha",
+      sortingFn: (rowA, rowB) =>
+        compareEventsByDate(rowA.original, rowB.original, mode),
       cell: ({ getValue }) => {
         const val = getValue<string>();
         try {
@@ -417,30 +683,16 @@ export function EventsTable({
         );
       },
     },
-  ], [deleteEvent, pendingEventIds, toggleActive]);
-
-  const filteredData = useMemo(() => events.filter((e) => {
-    const hasGenres = (e.event_genres?.length ?? 0) > 0;
-    const hasVenue = typeof e.venue === "string" && e.venue.trim().length > 0;
-    const genreSlugs = new Set(
-      (e.event_genres ?? [])
-        .map((relation) => relation.genres?.slug)
-        .filter((slug): slug is string => Boolean(slug)),
-    );
-
-    if (deferredGlobalFilter) {
-      const q = deferredGlobalFilter.toLowerCase();
-      if (!e.name.toLowerCase().includes(q)) return false;
-    }
-    if (sourceFilter !== "all" && e.source !== sourceFilter) return false;
-    if (genreFilter !== "all" && !genreSlugs.has(genreFilter)) return false;
-    if (statusFilter === "active" && !e.is_active) return false;
-    if (statusFilter === "inactive" && e.is_active) return false;
-    if (completenessFilter === "missing_genre" && hasGenres) return false;
-    if (completenessFilter === "missing_venue" && hasVenue) return false;
-    if (completenessFilter === "missing_genre_or_venue" && hasGenres && hasVenue) return false;
-    return true;
-  }), [completenessFilter, events, deferredGlobalFilter, genreFilter, sourceFilter, statusFilter]);
+  ], [
+    allFilteredSelected,
+    deleteEvent,
+    mode,
+    pendingEventIds,
+    selectedIds,
+    toggleActive,
+    toggleSelectAll,
+    toggleSelectOne,
+  ]);
 
   const table = useReactTable({
     data: filteredData,
@@ -450,7 +702,10 @@ export function EventsTable({
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    initialState: { pagination: { pageSize: 20 } },
+    initialState: {
+      pagination: { pageSize: 20 },
+      sorting: [{ id: "date", desc: mode === "past" }],
+    },
   });
 
   const { pageIndex, pageSize } = table.getState().pagination;
@@ -469,6 +724,18 @@ export function EventsTable({
             </p>
           </div>
           <div className="flex gap-2">
+            {selectedIds.size > 0 ? (
+              <Button variant="destructive" size="sm" onClick={handleBulkDeleteSelected}>
+                <Trash2 className="h-4 w-4" />
+                Eliminar {selectedIds.size}
+              </Button>
+            ) : null}
+            {sourceFilter !== "all" ? (
+              <Button variant="destructive" size="sm" onClick={handleDeleteBySource}>
+                <Trash2 className="h-4 w-4" />
+                Borrar fuente {sourceFilter} ({sourceEventCount})
+              </Button>
+            ) : null}
             <Button variant="outline" size="sm" onClick={fetchEvents} disabled={loading}>
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               Actualizar
@@ -540,6 +807,34 @@ export function EventsTable({
               <SelectItem value="missing_genre_or_venue">Sin género o venue</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={calendarFilter} onValueChange={setCalendarFilter}>
+            <SelectTrigger className="lg:w-52">
+              <SelectValue placeholder="Calendario" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas las fechas</SelectItem>
+              <SelectItem value="today">Hoy</SelectItem>
+              <SelectItem value="week">Esta semana</SelectItem>
+              <SelectItem value="month">Este mes</SelectItem>
+              <SelectItem value="next_30_days">Próximos 30 días</SelectItem>
+              <SelectItem value="upcoming">Próximos</SelectItem>
+              <SelectItem value="past">Pasados</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="lg:w-44"
+            aria-label="Fecha desde"
+          />
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="lg:w-44"
+            aria-label="Fecha hasta"
+          />
         </div>
       </div>
 

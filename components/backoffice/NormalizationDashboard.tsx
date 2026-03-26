@@ -15,6 +15,8 @@ type ScraperEvent = EventListItemDto & { genres: string[] };
 type NormalizationOverview = {
   classified_today_count: number;
   open_review_count: number;
+  open_missing_artist_count: number;
+  open_unresolved_artist_count: number;
 };
 
 type ClassifyState =
@@ -265,7 +267,7 @@ export function NormalizationDashboard({ role }: { role: BackofficeRole }) {
       </div>
 
       {/* ── Stats ── */}
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Sin género"
           value={noGenre}
@@ -283,6 +285,16 @@ export function NormalizationDashboard({ role }: { role: BackofficeRole }) {
           value={overview?.open_review_count ?? 0}
           description="señales ambiguas que requieren atención"
           accent="purple"
+        />
+        <StatCard
+          label="Sin artista"
+          value={overview?.open_missing_artist_count ?? 0}
+          description="eventos abiertos por falta de artista"
+        />
+        <StatCard
+          label="Artista no resuelto"
+          value={overview?.open_unresolved_artist_count ?? 0}
+          description="casos abiertos sin match confiable"
         />
       </div>
 

@@ -55,3 +55,30 @@ export async function POST(req: Request) {
     auth,
   );
 }
+
+export async function DELETE(req: Request) {
+  const auth = await resolveBackofficeAuth();
+  if (!auth) return unauthorizedBackofficeResponse();
+
+  const body = await req.json().catch(() => ({}));
+
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/api-admin-events`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${auth.accessToken}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (res.status === 204) {
+    return applyBackofficeAuthCookies(new NextResponse(null, { status: 204 }), auth);
+  }
+
+  const payload = await res.json().catch(() => ({}));
+  return applyBackofficeAuthCookies(
+    NextResponse.json(payload, { status: res.status }),
+    auth,
+  );
+}

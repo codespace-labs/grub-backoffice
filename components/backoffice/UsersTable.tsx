@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import type { AdminRole, AdminUserDto } from "@grub/contracts";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { RefreshCw, ShieldCheck, Plus, Pencil, Trash2 } from "lucide-react";
+import { RefreshCw, ShieldCheck, Plus, Pencil, Trash2, Ban, CircleCheck } from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import {
@@ -48,10 +48,8 @@ function formatDate(val: string | null | undefined) {
   }
 }
 
-function canEditUser(actorRole: AdminRole, targetRole: AdminRole): boolean {
-  if (actorRole === "superadmin") return true;
-  if (actorRole === "admin") return targetRole !== "superadmin" && targetRole !== "admin";
-  return false;
+function canEditUser(actorRole: AdminRole, _targetRole: AdminRole): boolean {
+  return actorRole === "superadmin" || actorRole === "admin";
 }
 
 function availableRolesFor(actorRole: AdminRole): AdminRole[] {
@@ -60,18 +58,29 @@ function availableRolesFor(actorRole: AdminRole): AdminRole[] {
   return [];
 }
 
+function canEditUserRole(actorRole: AdminRole, targetRole: AdminRole): boolean {
+  if (actorRole === "superadmin") return true;
+  // admin puede editar a todos menos superadmin
+  if (actorRole === "admin") return targetRole !== "superadmin";
+  return false;
+}
+
 export function UsersTable({ initialUsers, currentRole }: UsersTableProps) {
   const [users, setUsers] = useState<AdminUserDto[]>(initialUsers);
   const [loading, setLoading] = useState(false);
   const [roleFilter, setRoleFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const [providerFilter, setProviderFilter] = useState("all");
   const [pendingRole, setPendingRole] = useState<string | null>(null);
   const [pendingVerified, setPendingVerified] = useState<string | null>(null);
+  const [pendingBan, setPendingBan] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUserDto | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const canEdit = currentRole === "superadmin" || currentRole === "admin";
-  const canDelete = currentRole === "superadmin";
+  const canDelete = currentRole === "superadmin" || currentRole === "admin";
+  const canBan = currentRole === "superadmin" || currentRole === "admin";
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -122,9 +131,38 @@ export function UsersTable({ initialUsers, currentRole }: UsersTableProps) {
     }
   }
 
-  async function deleteUser(user: AdminUserDto) {
+  async function toggleBan(user: AdminUserDto) {
+    const nextBan = !user.is_banned;
+    const action = nextBan ? "desactivar" : "reactivar";
     const confirmed = window.confirm(
-      `¿Eliminar a ${user.email ?? user.id}? Esta acción no se puede deshacer.`
+      `¿${action.charAt(0).toUpperCase() + action.slice(1)} a ${user.email ?? user.display_name ?? user.id}?`
+    );
+    if (!confirmed) return;
+
+    setPendingBan(user.id);
+    setDeleteError(null);
+    try {
+      const res = await fetch("/api/admin/user-ban", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: user.id, ban: nextBan }),
+      });
+      const json = await res.json().catch(() => ({})) as { error?: string };
+      if (!res.ok) throw new Error(json.error ?? `Error ${res.status}`);
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, is_banned: nextBan } : u))
+      );
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : `No se pudo ${action} el usuario.`);
+    } finally {
+      setPendingBan(null);
+    }
+  }
+
+  async function deleteUser(user: AdminUserDto) {
+    const label = user.source === "customer" ? "cliente" : "usuario";
+    const confirmed = window.confirm(
+      `¿Eliminar este ${label}: ${user.email ?? user.display_name ?? user.id}? Esta acción no se puede deshacer.`
     );
     if (!confirmed) return;
 
@@ -133,7 +171,11 @@ export function UsersTable({ initialUsers, currentRole }: UsersTableProps) {
       const res = await fetch("/api/admin/user-delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: user.id }),
+        body: JSON.stringify({
+          user_id: user.id,
+          source: user.source ?? "backoffice",
+          clerk_user_id: user.clerk_user_id ?? null,
+        }),
       });
       const json = await res.json().catch(() => ({})) as { error?: string };
       if (!res.ok) throw new Error(json.error ?? `Error ${res.status}`);
@@ -162,13 +204,17 @@ export function UsersTable({ initialUsers, currentRole }: UsersTableProps) {
     });
   }
 
-  const filtered = users.filter((u) =>
-    roleFilter === "all" || u.role === roleFilter
-  );
+  const filtered = users.filter((u) => {
+    const matchesRole = roleFilter === "all" || u.role === roleFilter;
+    const matchesSource = sourceFilter === "all" || (u.source ?? "backoffice") === sourceFilter;
+    const effectiveProvider = u.source === "backoffice" ? "backoffice" : (u.provider ?? "unknown");
+    const matchesProvider = providerFilter === "all" || effectiveProvider === providerFilter;
+    return matchesRole && matchesSource && matchesProvider;
+  });
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Select value={roleFilter} onValueChange={setRoleFilter}>
           <SelectTrigger className="w-44">
             <SelectValue placeholder="Rol" />
@@ -179,6 +225,31 @@ export function UsersTable({ initialUsers, currentRole }: UsersTableProps) {
             <SelectItem value="admin">Admin</SelectItem>
             <SelectItem value="operator">Operator</SelectItem>
             <SelectItem value="viewer">Viewer</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={sourceFilter} onValueChange={setSourceFilter}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Origen" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los orígenes</SelectItem>
+            <SelectItem value="backoffice">Backoffice</SelectItem>
+            <SelectItem value="customer">Cliente app</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={providerFilter} onValueChange={setProviderFilter}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Proveedor" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los proveedores</SelectItem>
+            <SelectItem value="backoffice">Backoffice</SelectItem>
+            <SelectItem value="google">Google</SelectItem>
+            <SelectItem value="apple">Apple</SelectItem>
+            <SelectItem value="phone">Phone</SelectItem>
+            <SelectItem value="unknown">Sin dato</SelectItem>
           </SelectContent>
         </Select>
 
@@ -207,6 +278,8 @@ export function UsersTable({ initialUsers, currentRole }: UsersTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Email</TableHead>
+              <TableHead>Origen</TableHead>
+              <TableHead>Proveedor</TableHead>
               <TableHead>Teléfono</TableHead>
               <TableHead>Rol</TableHead>
               <TableHead>Verificado</TableHead>
@@ -218,15 +291,44 @@ export function UsersTable({ initialUsers, currentRole }: UsersTableProps) {
           <TableBody>
             {filtered.length ? (
               filtered.map((user) => {
-                const editable = canEditUser(currentRole, user.role);
+                const editable = user.editable !== false && canEditUser(currentRole, user.role) && canEditUserRole(currentRole, user.role);
+                const deletable = canDelete && (editable || user.source === "customer");
+                const bannable = canBan && editable && user.source === "backoffice";
                 const roleOptions = availableRolesFor(currentRole);
                 const isRolePending = pendingRole === user.id;
                 const isVerifiedPending = pendingVerified === user.id;
+                const isBanPending = pendingBan === user.id;
 
                 return (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">
-                      {user.email ?? "—"}
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className={user.is_banned ? "text-muted-foreground line-through" : ""}>
+                            {user.email ?? user.display_name ?? "—"}
+                          </span>
+                          {user.is_banned && (
+                            <span className="rounded-full bg-red-500/15 px-1.5 py-0.5 text-[10px] font-medium text-red-400">
+                              Desactivado
+                            </span>
+                          )}
+                        </div>
+                        {user.display_name && user.email ? (
+                          <div className="text-[11px] text-muted-foreground">{user.display_name}</div>
+                        ) : null}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="text-xs text-muted-foreground">
+                      {user.source_label ?? "—"}
+                    </TableCell>
+
+                    <TableCell className="text-xs text-muted-foreground">
+                      {user.source === "backoffice"
+                        ? "Backoffice"
+                        : user.provider
+                          ? user.provider.charAt(0).toUpperCase() + user.provider.slice(1)
+                          : "—"}
                     </TableCell>
 
                     <TableCell className="text-xs text-muted-foreground">
@@ -263,15 +365,15 @@ export function UsersTable({ initialUsers, currentRole }: UsersTableProps) {
 
                     <TableCell>
                       <button
-                        disabled={!canEdit || isVerifiedPending}
-                        onClick={() => canEdit && toggleVerified(user.id, user.is_verified)}
+                        disabled={!canEdit || !editable || isVerifiedPending}
+                        onClick={() => canEdit && editable && toggleVerified(user.id, user.is_verified)}
                         title={user.is_verified ? "Quitar verificación" : "Marcar como verificado"}
                         className={cn(
                           "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors",
                           user.is_verified
                             ? "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25"
                             : "bg-muted/40 text-muted-foreground hover:bg-muted/70",
-                          (!canEdit || isVerifiedPending) && "cursor-default opacity-50"
+                          (!canEdit || !editable || isVerifiedPending) && "cursor-default opacity-50"
                         )}
                       >
                         <ShieldCheck className="h-3.5 w-3.5" />
@@ -304,13 +406,28 @@ export function UsersTable({ initialUsers, currentRole }: UsersTableProps) {
                               <Pencil className="h-4 w-4" />
                             </Button>
                           )}
-                          {canDelete && editable && (
+                          {bannable && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              disabled={isBanPending}
+                              onClick={() => toggleBan(user)}
+                              title={user.is_banned ? "Reactivar usuario" : "Desactivar usuario"}
+                              className={user.is_banned ? "text-emerald-400" : "text-amber-400"}
+                            >
+                              {user.is_banned
+                                ? <CircleCheck className="h-4 w-4" />
+                                : <Ban className="h-4 w-4" />
+                              }
+                            </Button>
+                          )}
+                          {deletable && (
                             <Button
                               variant="ghost"
                               size="icon"
                               className="text-destructive"
                               onClick={() => deleteUser(user)}
-                              title="Eliminar usuario"
+                              title={user.source === "customer" ? "Eliminar cliente" : "Eliminar usuario"}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -323,7 +440,7 @@ export function UsersTable({ initialUsers, currentRole }: UsersTableProps) {
               })
             ) : (
               <TableRow>
-                <TableCell colSpan={canEdit ? 7 : 6} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={canEdit ? 9 : 8} className="h-24 text-center text-muted-foreground">
                   No se encontraron usuarios
                 </TableCell>
               </TableRow>

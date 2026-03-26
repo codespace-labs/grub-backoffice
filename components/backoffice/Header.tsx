@@ -17,6 +17,7 @@ import {
 import { BrandMark } from "./BrandMark";
 import { backofficeNavItems } from "./nav-items";
 import { LogoutButton } from "../../app/components/LogoutButton";
+import { ChangePasswordDialog } from "./ChangePasswordDialog";
 
 interface HeaderProps {
   session: BackofficeSession;
@@ -107,7 +108,8 @@ export function Header({ session, title = "Backoffice" }: HeaderProps) {
         <span className="hidden text-sm text-muted-foreground md:inline">
           {session.email}
         </span>
-        <div className="hidden md:block">
+        <div className="flex items-center gap-2">
+          <ChangePasswordDialog />
           <LogoutButton />
         </div>
       </div>

@@ -1,0 +1,172 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - link "backoffice" [ref=e5] [cursor=pointer]:
+        - /url: /backoffice
+        - generic [ref=e7]:
+          - img [ref=e8]
+          - generic [ref=e13]: backoffice
+      - navigation [ref=e14]:
+        - list [ref=e15]:
+          - listitem [ref=e16]:
+            - link "Overview" [ref=e17] [cursor=pointer]:
+              - /url: /backoffice
+              - img [ref=e18]
+              - text: Overview
+          - listitem [ref=e23]:
+            - link "Eventos" [ref=e24] [cursor=pointer]:
+              - /url: /backoffice/events
+              - img [ref=e25]
+              - text: Eventos
+          - listitem [ref=e27]:
+            - link "Eventos pasados" [ref=e28] [cursor=pointer]:
+              - /url: /backoffice/past-events
+              - img [ref=e29]
+              - text: Eventos pasados
+          - listitem [ref=e31]:
+            - link "Calidad" [ref=e32] [cursor=pointer]:
+              - /url: /backoffice/quality
+              - img [ref=e33]
+              - text: Calidad
+          - listitem [ref=e35]:
+            - link "Scrapers" [ref=e36] [cursor=pointer]:
+              - /url: /backoffice/scrapers
+              - img [ref=e37]
+              - text: Scrapers
+          - listitem [ref=e40]:
+            - link "Normalización" [ref=e41] [cursor=pointer]:
+              - /url: /backoffice/normalization
+              - img [ref=e42]
+              - text: Normalización
+          - listitem [ref=e45]:
+            - link "Syncs" [ref=e46] [cursor=pointer]:
+              - /url: /backoffice/sync
+              - img [ref=e47]
+              - text: Syncs
+          - listitem [ref=e51]:
+            - link "Auditoria" [ref=e52] [cursor=pointer]:
+              - /url: /backoffice/audit
+              - img [ref=e53]
+              - text: Auditoria
+          - listitem [ref=e57]:
+            - link "Usuarios" [ref=e58] [cursor=pointer]:
+              - /url: /backoffice/users
+              - img [ref=e59]
+              - text: Usuarios
+          - listitem [ref=e64]:
+            - link "Analytics" [ref=e65] [cursor=pointer]:
+              - /url: /backoffice/analytics
+              - img [ref=e66]
+              - text: Analytics
+          - listitem [ref=e68]:
+            - link "CMS" [ref=e69] [cursor=pointer]:
+              - /url: /backoffice/cms
+              - img [ref=e70]
+              - text: CMS
+      - paragraph [ref=e74]: grub backoffice v0.1
+    - generic [ref=e75]:
+      - banner [ref=e76]:
+        - generic [ref=e78]:
+          - paragraph [ref=e79]: Inicio
+          - heading "Overview" [level=1] [ref=e80]
+        - generic [ref=e81]:
+          - generic [ref=e82]: superadmin
+          - generic [ref=e83]: admin@grub.com
+          - generic [ref=e84]:
+            - button "Cambiar contraseña" [ref=e85]:
+              - img [ref=e86]
+              - generic [ref=e89]: Contraseña
+            - button "Cerrar sesión" [ref=e90] [cursor=pointer]
+      - main [ref=e91]:
+        - generic [ref=e92]:
+          - generic [ref=e93]:
+            - heading "Overview" [level=2] [ref=e94]
+            - paragraph [ref=e95]: Resumen general del estado de grub
+          - generic [ref=e96]:
+            - generic [ref=e97]:
+              - heading "Total eventos" [level=3] [ref=e99]
+              - paragraph [ref=e101]: "250"
+            - generic [ref=e102]:
+              - heading "Eventos activos" [level=3] [ref=e104]
+              - generic [ref=e105]:
+                - paragraph [ref=e106]: "250"
+                - paragraph [ref=e107]: 100% del total
+            - generic [ref=e108]:
+              - heading "Sin géneros" [level=3] [ref=e110]
+              - generic [ref=e111]:
+                - paragraph [ref=e112]: "25"
+                - paragraph [ref=e113]: Requieren clasificación
+            - generic [ref=e114]:
+              - heading "Con cover" [level=3] [ref=e116]
+              - generic [ref=e117]:
+                - paragraph [ref=e118]: "206"
+                - paragraph [ref=e119]: 82% del total
+          - generic [ref=e120]:
+            - generic [ref=e121]:
+              - heading "Últimas sincronizaciones" [level=3] [ref=e123]
+              - generic [ref=e125]:
+                - generic [ref=e126]:
+                  - generic [ref=e127]:
+                    - paragraph [ref=e128]: sync_global
+                    - paragraph [ref=e129]: 26 mar 2026 16:51
+                  - generic [ref=e130]: partial
+                - generic [ref=e131]:
+                  - generic [ref=e132]:
+                    - paragraph [ref=e133]: sync_global
+                    - paragraph [ref=e134]: 26 mar 2026 16:51
+                  - generic [ref=e135]: failed
+                - generic [ref=e136]:
+                  - generic [ref=e137]:
+                    - paragraph [ref=e138]: sync_global
+                    - paragraph [ref=e139]: 26 mar 2026 16:50
+                  - generic [ref=e140]: success
+                - generic [ref=e141]:
+                  - generic [ref=e142]:
+                    - paragraph [ref=e143]: sync_global
+                    - paragraph [ref=e144]: 26 mar 2026 16:50
+                  - generic [ref=e145]: success
+                - generic [ref=e146]:
+                  - generic [ref=e147]:
+                    - paragraph [ref=e148]: sync_global
+                    - paragraph [ref=e149]: 26 mar 2026 16:49
+                  - generic [ref=e150]: running
+            - generic [ref=e151]:
+              - heading "Issues de calidad abiertos" [level=3] [ref=e153]
+              - generic [ref=e155]:
+                - generic [ref=e156]:
+                  - generic [ref=e157]:
+                    - paragraph [ref=e158]: JUNTOS EN CONCIERTO
+                    - paragraph [ref=e159]: missing_visible_venue · event
+                    - paragraph [ref=e160]: 24 mar 2026 22:13
+                  - generic [ref=e161]: open
+                - generic [ref=e162]:
+                  - generic [ref=e163]:
+                    - paragraph [ref=e164]: LIT KILLAH en Lima X Trap House | 2026
+                    - paragraph [ref=e165]: missing_visible_venue · event
+                    - paragraph [ref=e166]: 24 mar 2026 22:12
+                  - generic [ref=e167]: open
+                - generic [ref=e168]:
+                  - generic [ref=e169]:
+                    - paragraph [ref=e170]: Chuck Prophet & His Cumbia Shoes (21+)
+                    - paragraph [ref=e171]: missing_genre · event
+                    - paragraph [ref=e172]: 24 mar 2026 22:12
+                  - generic [ref=e173]: open
+                - generic [ref=e174]:
+                  - generic [ref=e175]:
+                    - paragraph [ref=e176]: KALIMBA
+                    - paragraph [ref=e177]: missing_visible_venue · event
+                    - paragraph [ref=e178]: 24 mar 2026 22:03
+                  - generic [ref=e179]: open
+                - generic [ref=e180]:
+                  - generic [ref=e181]:
+                    - paragraph [ref=e182]: Savia Andina 50 años y Yolanda Pinares
+                    - paragraph [ref=e183]: missing_visible_venue · event
+                    - paragraph [ref=e184]: 24 mar 2026 22:03
+                  - generic [ref=e185]: open
+  - button "Open Next.js Dev Tools" [ref=e191] [cursor=pointer]:
+    - img [ref=e192]
+  - alert [ref=e195]
+```

@@ -7,6 +7,7 @@ import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "./auth-constants";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 const THIRTY_DAYS = 60 * 60 * 24 * 30;
+const AUTH_REQUEST_TIMEOUT_MS = 5000;
 
 type SessionTokens = {
   accessToken: string;
@@ -40,13 +41,19 @@ function setCookie(
 async function validateAccessToken(accessToken: string): Promise<boolean> {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return false;
 
-  const check = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${accessToken}`,
-    },
-    cache: "no-store",
-  });
+  let check: Response;
+  try {
+    check = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${accessToken}`,
+      },
+      cache: "no-store",
+      signal: AbortSignal.timeout(AUTH_REQUEST_TIMEOUT_MS),
+    });
+  } catch {
+    return false;
+  }
 
   return check.ok;
 }
@@ -54,15 +61,21 @@ async function validateAccessToken(accessToken: string): Promise<boolean> {
 async function refreshSession(refreshToken: string): Promise<SessionTokens | null> {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
 
-  const refresh = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
-    method: "POST",
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ refresh_token: refreshToken }),
-    cache: "no-store",
-  });
+  let refresh: Response;
+  try {
+    refresh = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+      cache: "no-store",
+      signal: AbortSignal.timeout(AUTH_REQUEST_TIMEOUT_MS),
+    });
+  } catch {
+    return null;
+  }
 
   if (!refresh.ok) return null;
 
@@ -130,4 +143,3 @@ export function unauthorizedBackofficeResponse(): NextResponse {
     NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
   );
 }
-

@@ -14,6 +14,8 @@ interface SupabaseUserResponse {
   };
 }
 
+const AUTH_REQUEST_TIMEOUT_MS = 5000;
+
 function resolveRole(user: SupabaseUserResponse): BackofficeRole {
   const rawRole = user.app_metadata?.role ?? user.user_metadata?.role ?? "viewer";
   if (rawRole === "superadmin" || rawRole === "admin" || rawRole === "operator" || rawRole === "viewer") {
@@ -33,13 +35,19 @@ export async function getBackofficeSession(): Promise<BackofficeSession | null> 
   const auth = await resolveBackofficeAuth();
   if (!auth) return null;
 
-  const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: {
-      apikey: anonKey,
-      Authorization: `Bearer ${auth.accessToken}`,
-    },
-    cache: "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${auth.accessToken}`,
+      },
+      cache: "no-store",
+      signal: AbortSignal.timeout(AUTH_REQUEST_TIMEOUT_MS),
+    });
+  } catch {
+    return null;
+  }
 
   if (!res.ok) {
     return null;

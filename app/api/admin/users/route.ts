@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   applyBackofficeAuthCookies,
+  clearBackofficeAuthCookies,
   resolveBackofficeAuth,
   unauthorizedBackofficeResponse,
 } from "../../../../lib/backoffice-session";
@@ -21,6 +22,12 @@ export async function GET() {
   });
 
   const payload = await res.json().catch(() => ({}));
+  if (res.status === 401) {
+    return clearBackofficeAuthCookies(
+      NextResponse.json(payload, { status: 401 }),
+    );
+  }
+
   return applyBackofficeAuthCookies(
     NextResponse.json(payload, { status: res.status }),
     auth,

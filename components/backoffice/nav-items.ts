@@ -36,6 +36,12 @@ export const backofficeNavItems: BackofficeNavItem[] = [
     icon: CalendarDays,
   },
   {
+    href: "/backoffice/past-events" as Route,
+    label: "Eventos pasados",
+    shortLabel: "Pasados",
+    icon: CalendarDays,
+  },
+  {
     href: "/backoffice/quality" as Route,
     label: "Calidad",
     shortLabel: "Calidad",
