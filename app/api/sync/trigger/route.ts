@@ -13,13 +13,9 @@ export async function POST(req: Request) {
   if (!auth) return unauthorizedBackofficeResponse();
 
   const body = (await req.json().catch(() => ({}))) as {
-    source?: string;
+    source?: string | null;
     countries?: string[];
   };
-
-  if (!body.source) {
-    return NextResponse.json({ error: "Missing source" }, { status: 400 });
-  }
 
   const res = await fetch(`${SUPABASE_URL}/functions/v1/api-admin-source-sync`, {
     method: "POST",
@@ -29,7 +25,7 @@ export async function POST(req: Request) {
       Authorization: `Bearer ${auth.accessToken}`,
     },
     body: JSON.stringify({
-      source: body.source,
+      ...(body.source ? { source: body.source } : {}),
       countries: body.countries ?? ["PE"],
     }),
   });

@@ -66,6 +66,23 @@ export default async function BackofficeSyncPage() {
         </p>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Sync global</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Dispara todas las fuentes activas de Peru en una sola corrida.
+          </p>
+          <SourceSyncButton
+            disabled={session.role === "viewer"}
+            label="Correr sync global"
+            idleMessage="Ejecuta Ticketmaster PE, Teleticket, Joinnus, Passline, Vastion y Tikpe."
+            fallbackSources={sources}
+          />
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {sources.map((source) => (
           <Card key={source}>

@@ -2,63 +2,103 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { Button } from "../../components/backoffice/ui/button";
 
 export function SourceSyncButton({
   source,
+  fallbackSources,
   disabled,
+  label = "Correr sync",
+  idleMessage = " ",
 }: {
-  source: string;
+  source?: string;
+  fallbackSources?: string[];
   disabled: boolean;
+  label?: string;
+  idleMessage?: string;
 }) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  async function triggerSync(sourceToRun?: string) {
+    const res = await fetch("/api/sync/trigger", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...(sourceToRun ? { source: sourceToRun } : {}),
+        countries: ["PE"],
+      }),
+    });
+
+    const payload = await res.json().catch(() => ({})) as {
+      error?: string;
+      response?: {
+        results?: Array<{
+          inserted?: number;
+          updated?: number;
+          failed?: number;
+          skipped?: number;
+          diagnostics?: Record<string, unknown>;
+        }>;
+      };
+    };
+
+    return { res, payload };
+  }
+
   function onSync() {
     setMessage(null);
 
     startTransition(async () => {
-      const res = await fetch("/api/sync/trigger", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source, countries: ["PE"] }),
-      });
+      let res: Response;
+      let payload: Awaited<ReturnType<typeof triggerSync>>["payload"];
 
-      const payload = await res.json().catch(() => ({})) as {
-        response?: {
-          total_failed?: number;
-          results?: Array<{
-            inserted?: number;
-            updated?: number;
-            failed?: number;
-            skipped?: number;
-            diagnostics?: Record<string, unknown>;
-          }>;
-        };
-      };
+      if (!source && fallbackSources?.length) {
+        const fallbackRuns = await Promise.all(fallbackSources.map((item) => triggerSync(item)));
+        const failedFallback = fallbackRuns.find(({ res: fallbackRes }) => !fallbackRes.ok);
+
+        if (failedFallback) {
+          res = failedFallback.res;
+          payload = failedFallback.payload;
+        } else {
+          res = new Response(null, { status: 200 });
+          payload = {
+            response: {
+              results: fallbackRuns.flatMap((run) => run.payload.response?.results ?? []),
+            },
+          };
+        }
+      } else {
+        ({ res, payload } = await triggerSync(source));
+      }
 
       if (!res.ok) {
-        const errMsg = (payload as { error?: string }).error;
+        const errMsg = payload.error;
         setMessage(
           errMsg === "Unauthorized" || errMsg === "Forbidden"
             ? "Sin permisos para ejecutar el sync."
-            : "No se pudo disparar el sync. Revisa el worker.",
+            : errMsg
+              ? `No se pudo disparar el sync: ${errMsg}`
+              : "No se pudo disparar el sync. Revisa el worker.",
         );
         return;
       }
 
-      const result = payload.response?.results?.[0];
-      const inserted = Number(result?.inserted ?? 0);
-      const updated = Number(result?.updated ?? 0);
-      const failed = Number(result?.failed ?? 0);
-      const skipped = Number(result?.skipped ?? 0);
-      const skippedReasons = result?.diagnostics && typeof result.diagnostics.skipped_reasons === "object"
-        ? Object.entries(result.diagnostics.skipped_reasons as Record<string, unknown>)
+      const results = payload.response?.results ?? [];
+      const inserted = results.reduce((sum, result) => sum + Number(result.inserted ?? 0), 0);
+      const updated = results.reduce((sum, result) => sum + Number(result.updated ?? 0), 0);
+      const failed = results.reduce((sum, result) => sum + Number(result.failed ?? 0), 0);
+      const skipped = results.reduce((sum, result) => sum + Number(result.skipped ?? 0), 0);
+      const skippedReasons = results.flatMap((result) => {
+        if (!result.diagnostics || typeof result.diagnostics.skipped_reasons !== "object") {
+          return [];
+        }
+
+        return Object.entries(result.diagnostics.skipped_reasons as Record<string, unknown>)
           .filter(([, value]) => typeof value === "number" && value > 0)
-          .map(([reason, value]) => `${reason}: ${value}`)
-          .slice(0, 2)
-          .join(" · ")
-        : "";
+          .map(([reason, value]) => `${reason}: ${value}`);
+      }).slice(0, 2).join(" · ");
 
       if (inserted === 0 && updated === 0 && failed === 0) {
         setMessage(
@@ -74,25 +114,16 @@ export function SourceSyncButton({
   }
 
   return (
-    <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
-      <button
+    <div className="grid gap-1.5">
+      <Button
         type="button"
         disabled={disabled || isPending}
         onClick={onSync}
-        style={{
-          borderRadius: 10,
-          border: "1px solid rgba(148,163,184,0.22)",
-          background: isPending ? "rgba(20,184,166,0.07)" : "rgba(20,184,166,0.14)",
-          color: "#99f6e4",
-          padding: "8px 10px",
-          fontSize: 13,
-          cursor: isPending ? "wait" : "pointer",
-          opacity: disabled ? 0.5 : 1,
-        }}
+        className="w-full"
       >
-        {isPending ? "Ejecutando..." : "Correr sync"}
-      </button>
-      <div style={{ color: "var(--muted)", fontSize: 12, minHeight: 16 }}>{message ?? " "}</div>
+        {isPending ? "Ejecutando..." : label}
+      </Button>
+      <div className="min-h-4 text-xs text-muted-foreground">{message ?? idleMessage}</div>
     </div>
   );
 }
