@@ -329,311 +329,312 @@ export function EventFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? "Editar Evento" : "Nuevo Evento"}</DialogTitle>
-          <DialogDescription>
-            {isEditing
-              ? "Actualiza la información principal del evento desde el backoffice."
-              : "Crea un evento manual y publícalo directamente en el catálogo."}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nombre</Label>
-            <Input id="name" {...register("name")} placeholder="Nombre del evento" />
-            {errors.name && (
-              <p className="text-xs text-destructive">{errors.name.message}</p>
-            )}
-          </div>
+      <DialogContent className="left-auto right-0 top-0 h-screen w-screen max-w-[min(1200px,92vw)] translate-x-0 translate-y-0 rounded-none border-l border-border bg-background p-0">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col overflow-hidden">
+          <DialogHeader className="border-b border-border bg-background/95 px-8 py-6 backdrop-blur">
+            <DialogTitle className="text-2xl">{isEditing ? "Editar evento" : "Nuevo evento"}</DialogTitle>
+            <DialogDescription className="max-w-3xl text-sm">
+              {isEditing
+                ? "Ajusta el dato base, corrige catálogo y define cómo se presenta el evento dentro de la app desde un solo lugar."
+                : "Crea un evento manual, define su metadata principal y prepara su presentación para publicarlo en el catálogo."}
+            </DialogDescription>
+          </DialogHeader>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-            <Label htmlFor="date">Fecha</Label>
-              <Input id="date" type="datetime-local" {...register("date")} />
-            {errors.date && (
-              <p className="text-xs text-destructive">{errors.date.message}</p>
-            )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="cover_url">Cover URL</Label>
-              <Input id="cover_url" {...register("cover_url")} placeholder="https://..." />
-              {errors.cover_url && (
-                <p className="text-xs text-destructive">{errors.cover_url.message}</p>
-              )}
-            </div>
-          </div>
+          <div className="flex-1 overflow-y-auto px-8 py-6">
+            <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+              <section className="space-y-6">
+                <div className="rounded-2xl border border-border/70 bg-card/50 p-5">
+                  <div className="mb-4">
+                    <h4 className="text-sm font-semibold text-foreground">Información base</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Nombre, fecha, venue, fuente y enlaces principales del evento.
+                    </p>
+                  </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="venue">Venue</Label>
-              <Input id="venue" {...register("venue")} placeholder="Nombre del lugar" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="city">Ciudad</Label>
-              <Input id="city" {...register("city")} placeholder="Lima" />
-            </div>
-          </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Nombre</Label>
+                      <Input id="name" {...register("name")} placeholder="Nombre del evento" className="h-12 text-base" />
+                      {errors.name ? <p className="text-xs text-destructive">{errors.name.message}</p> : null}
+                    </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="ticket_url">URL de tickets</Label>
-            <Input
-              id="ticket_url"
-              {...register("ticket_url")}
-              placeholder="https://..."
-            />
-            {errors.ticket_url && (
-              <p className="text-xs text-destructive">
-                {errors.ticket_url.message}
-              </p>
-            )}
-          </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="date">Fecha</Label>
+                        <Input id="date" type="datetime-local" {...register("date")} className="h-12" />
+                        {errors.date ? <p className="text-xs text-destructive">{errors.date.message}</p> : null}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="cover_url">Cover URL</Label>
+                        <Input id="cover_url" {...register("cover_url")} placeholder="https://..." className="h-12" />
+                        {errors.cover_url ? <p className="text-xs text-destructive">{errors.cover_url.message}</p> : null}
+                      </div>
+                    </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="price_min">Precio mínimo</Label>
-              <Input
-                id="price_min"
-                type="number"
-                step="0.01"
-                {...register("price_min")}
-                placeholder="0.00"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="price_max">Precio máximo</Label>
-              <Input
-                id="price_max"
-                type="number"
-                step="0.01"
-                {...register("price_max")}
-                placeholder="0.00"
-              />
-            </div>
-          </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="venue">Venue</Label>
+                        <Input id="venue" {...register("venue")} placeholder="Nombre del lugar" className="h-12" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="city">Ciudad</Label>
+                        <Input id="city" {...register("city")} placeholder="Lima" className="h-12" />
+                      </div>
+                    </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="country_code">País</Label>
-              <Input id="country_code" {...register("country_code")} placeholder="PE" maxLength={2} />
-            </div>
-            <div className="space-y-2">
-              <Label>Fuente</Label>
-              <Select
-                value={source}
-                onValueChange={(v) =>
-                  setValue(
-                    "source",
-                    v as EventFormValues["source"]
-                  )
-                }
-              >
-                <SelectTrigger>
-                <SelectValue placeholder="Seleccionar fuente" />
-              </SelectTrigger>
-              <SelectContent>
-                  <SelectItem value="manual">Manual</SelectItem>
-                  <SelectItem value="ticketmaster">Ticketmaster</SelectItem>
-                  <SelectItem value="teleticket">Teleticket</SelectItem>
-                  <SelectItem value="ticketmaster-pe">Ticketmaster PE</SelectItem>
-                  <SelectItem value="joinnus">Joinnus</SelectItem>
-                  <SelectItem value="passline">Passline</SelectItem>
-                  <SelectItem value="vastion">Vastion</SelectItem>
-                  <SelectItem value="tikpe">Tikpe</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ticket_url">URL de tickets</Label>
+                      <Input id="ticket_url" {...register("ticket_url")} placeholder="https://..." className="h-12" />
+                      {errors.ticket_url ? <p className="text-xs text-destructive">{errors.ticket_url.message}</p> : null}
+                    </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-3">
-              <Label>Géneros</Label>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setGenreCreatorOpen((current) => !current)}
-              >
-                {genreCreatorOpen ? "Cerrar" : "Nuevo género"}
-              </Button>
-            </div>
-            {genreCreatorOpen ? (
-              <div className="rounded-xl border border-border bg-card/60 p-3">
-                <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-                  <Input
-                    value={newGenreName}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      setNewGenreName(value);
-                      setNewGenreSlug(slugifyGenre(value));
-                    }}
-                    placeholder="Nombre del género"
-                  />
-                  <Input
-                    value={newGenreSlug}
-                    onChange={(event) => setNewGenreSlug(slugifyGenre(event.target.value))}
-                    placeholder="slug-del-genero"
-                  />
-                  <Button
-                    type="button"
-                    onClick={createGenre}
-                    disabled={creatingGenre}
-                  >
-                    {creatingGenre ? "Creando..." : "Crear"}
-                  </Button>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="price_min">Precio mínimo</Label>
+                        <Input id="price_min" type="number" step="0.01" {...register("price_min")} placeholder="0.00" className="h-12" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="price_max">Precio máximo</Label>
+                        <Input id="price_max" type="number" step="0.01" {...register("price_max")} placeholder="0.00" className="h-12" />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="country_code">País</Label>
+                        <Input id="country_code" {...register("country_code")} placeholder="PE" maxLength={2} className="h-12" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Fuente</Label>
+                        <Select
+                          value={source}
+                          onValueChange={(v) => setValue("source", v as EventFormValues["source"])}
+                        >
+                          <SelectTrigger className="h-12">
+                            <SelectValue placeholder="Seleccionar fuente" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="manual">Manual</SelectItem>
+                            <SelectItem value="ticketmaster">Ticketmaster</SelectItem>
+                            <SelectItem value="teleticket">Teleticket</SelectItem>
+                            <SelectItem value="ticketmaster-pe">Ticketmaster PE</SelectItem>
+                            <SelectItem value="joinnus">Joinnus</SelectItem>
+                            <SelectItem value="passline">Passline</SelectItem>
+                            <SelectItem value="vastion">Vastion</SelectItem>
+                            <SelectItem value="tikpe">Tikpe</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ) : null}
-            <Select
-              value=""
-              onValueChange={(genreId) => {
-                const numericGenreId = Number(genreId);
-                const nextGenreIds = selectedGenreIds.includes(numericGenreId)
-                  ? selectedGenreIds
-                  : [...selectedGenreIds, numericGenreId];
-                setValue("genre_ids", nextGenreIds, { shouldDirty: true });
-              }}
-              disabled={genresLoading || genres.length === 0}
-            >
-              <SelectTrigger>
-                <SelectValue
-                  placeholder={
-                    genresLoading
-                      ? "Cargando géneros..."
-                      : genres.length
-                        ? "Selecciona uno o más géneros"
-                        : "No hay géneros disponibles"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {genres.map((genre) => (
-                  <SelectItem key={genre.id} value={String(genre.id)}>
-                    {genre.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedGenreIds.length ? (
-              <div className="flex flex-wrap gap-2">
-                {selectedGenreIds.map((genreId) => {
-                  const genre = genres.find((item) => item.id === genreId);
-                  return (
-                    <button
-                      key={genreId}
+
+                <div className="rounded-2xl border border-border/70 bg-card/50 p-5">
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground">Géneros</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Vincula el evento al catálogo de géneros y crea uno nuevo si todavía no existe.
+                      </p>
+                    </div>
+                    <Button
                       type="button"
-                      className="rounded-full border border-border px-3 py-1 text-xs text-foreground transition hover:border-destructive/50 hover:text-destructive"
-                      onClick={() =>
-                        setValue(
-                          "genre_ids",
-                          selectedGenreIds.filter((value) => value !== genreId),
-                          { shouldDirty: true },
-                        )
-                      }
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setGenreCreatorOpen((current) => !current)}
                     >
-                      {genre?.name ?? genreId} x
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Elige los géneros que quieres asociar a este evento.
-              </p>
-            )}
+                      {genreCreatorOpen ? "Cerrar" : "Nuevo género"}
+                    </Button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {genreCreatorOpen ? (
+                      <div className="rounded-xl border border-border bg-background/60 p-3">
+                        <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+                          <Input
+                            value={newGenreName}
+                            onChange={(event) => {
+                              const value = event.target.value;
+                              setNewGenreName(value);
+                              setNewGenreSlug(slugifyGenre(value));
+                            }}
+                            placeholder="Nombre del género"
+                            className="h-11"
+                          />
+                          <Input
+                            value={newGenreSlug}
+                            onChange={(event) => setNewGenreSlug(slugifyGenre(event.target.value))}
+                            placeholder="slug-del-genero"
+                            className="h-11"
+                          />
+                          <Button type="button" onClick={createGenre} disabled={creatingGenre} className="h-11">
+                            {creatingGenre ? "Creando..." : "Crear"}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <Select
+                      value=""
+                      onValueChange={(genreId) => {
+                        const numericGenreId = Number(genreId);
+                        const nextGenreIds = selectedGenreIds.includes(numericGenreId)
+                          ? selectedGenreIds
+                          : [...selectedGenreIds, numericGenreId];
+                        setValue("genre_ids", nextGenreIds, { shouldDirty: true });
+                      }}
+                      disabled={genresLoading || genres.length === 0}
+                    >
+                      <SelectTrigger className="h-12">
+                        <SelectValue
+                          placeholder={
+                            genresLoading
+                              ? "Cargando géneros..."
+                              : genres.length
+                                ? "Selecciona uno o más géneros"
+                                : "No hay géneros disponibles"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {genres.map((genre) => (
+                          <SelectItem key={genre.id} value={String(genre.id)}>
+                            {genre.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    {selectedGenreIds.length ? (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedGenreIds.map((genreId) => {
+                          const genre = genres.find((item) => item.id === genreId);
+                          return (
+                            <button
+                              key={genreId}
+                              type="button"
+                              className="rounded-full border border-border bg-background/70 px-3 py-1.5 text-xs text-foreground transition hover:border-destructive/50 hover:text-destructive"
+                              onClick={() =>
+                                setValue(
+                                  "genre_ids",
+                                  selectedGenreIds.filter((value) => value !== genreId),
+                                  { shouldDirty: true },
+                                )
+                              }
+                            >
+                              {genre?.name ?? genreId} x
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Elige los géneros que quieres asociar a este evento.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              <section className="space-y-6">
+                <div className="rounded-2xl border border-border/70 bg-card/50 p-5">
+                  <div className="mb-4">
+                    <h4 className="text-sm font-semibold text-foreground">Presentación en app</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Ajusta el título, badge e imagen de la card vertical y horizontal sin tocar el dato base.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="vertical_title">Título card vertical</Label>
+                      <Input id="vertical_title" {...register("vertical_title")} placeholder="Usar nombre base del evento" className="h-11" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="horizontal_title">Título card horizontal</Label>
+                      <Input id="horizontal_title" {...register("horizontal_title")} placeholder="Usar nombre base del evento" className="h-11" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="category_badge">Badge vertical</Label>
+                      <Input id="category_badge" {...register("category_badge")} placeholder="Rock, Pop, Live..." className="h-11" />
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Ajuste imagen vertical</Label>
+                        <Select
+                          value={verticalImageFit}
+                          onValueChange={(value) =>
+                            setValue("vertical_image_fit", value as EventFormValues["vertical_image_fit"], {
+                              shouldDirty: true,
+                            })
+                          }
+                        >
+                          <SelectTrigger className="h-11">
+                            <SelectValue placeholder="Ajuste vertical" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="cover">Cover</SelectItem>
+                            <SelectItem value="contain">Contain</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Ajuste imagen horizontal</Label>
+                        <Select
+                          value={horizontalImageFit}
+                          onValueChange={(value) =>
+                            setValue("horizontal_image_fit", value as EventFormValues["horizontal_image_fit"], {
+                              shouldDirty: true,
+                            })
+                          }
+                        >
+                          <SelectTrigger className="h-11">
+                            <SelectValue placeholder="Ajuste horizontal" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="cover">Cover</SelectItem>
+                            <SelectItem value="contain">Contain</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-border/70 bg-card/50 p-5">
+                  <div className="mb-4">
+                    <h4 className="text-sm font-semibold text-foreground">Estado del evento</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Controla si el evento permanece visible en el catálogo activo.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-xl border border-border bg-background/60 px-4 py-3">
+                    <div>
+                      <div className="text-sm font-medium text-foreground">Activo</div>
+                      <div className="text-xs text-muted-foreground">
+                        Si lo desactivas, el evento sale del catálogo visible para usuarios.
+                      </div>
+                    </div>
+                    <Switch
+                      id="is_active"
+                      checked={isActive}
+                      onCheckedChange={(v) => setValue("is_active", v)}
+                    />
+                  </div>
+                </div>
+
+                {submitError ? (
+                  <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+                    {submitError}
+                  </div>
+                ) : null}
+              </section>
+            </div>
           </div>
 
-          <div className="rounded-xl border border-border/70 bg-card/40 p-4">
-            <div className="mb-3">
-              <h4 className="text-sm font-semibold">Presentación en app</h4>
-              <p className="text-xs text-muted-foreground">
-                Edita cómo se ve este evento en la card vertical y horizontal sin tocar el dato base.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="vertical_title">Título card vertical</Label>
-                <Input
-                  id="vertical_title"
-                  {...register("vertical_title")}
-                  placeholder="Usar nombre base del evento"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="horizontal_title">Título card horizontal</Label>
-                <Input
-                  id="horizontal_title"
-                  {...register("horizontal_title")}
-                  placeholder="Usar nombre base del evento"
-                />
-              </div>
-            </div>
-
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="category_badge">Badge vertical</Label>
-                <Input
-                  id="category_badge"
-                  {...register("category_badge")}
-                  placeholder="Rock, Pop, Live..."
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Ajuste imagen vertical</Label>
-                <Select
-                  value={verticalImageFit}
-                  onValueChange={(value) =>
-                    setValue("vertical_image_fit", value as EventFormValues["vertical_image_fit"], {
-                      shouldDirty: true,
-                    })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Ajuste vertical" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cover">Cover</SelectItem>
-                    <SelectItem value="contain">Contain</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Ajuste imagen horizontal</Label>
-                <Select
-                  value={horizontalImageFit}
-                  onValueChange={(value) =>
-                    setValue("horizontal_image_fit", value as EventFormValues["horizontal_image_fit"], {
-                      shouldDirty: true,
-                    })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Ajuste horizontal" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cover">Cover</SelectItem>
-                    <SelectItem value="contain">Contain</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Switch
-              id="is_active"
-              checked={isActive}
-              onCheckedChange={(v) => setValue("is_active", v)}
-            />
-            <Label htmlFor="is_active">Activo</Label>
-          </div>
-
-          {submitError ? (
-            <p className="text-sm text-destructive">{submitError}</p>
-          ) : null}
-
-          <DialogFooter>
+          <DialogFooter className="border-t border-border bg-background/95 px-8 py-5 backdrop-blur">
             <Button
               type="button"
               variant="outline"

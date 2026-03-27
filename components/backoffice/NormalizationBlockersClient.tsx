@@ -33,5 +33,15 @@ export function NormalizationBlockersClient() {
     return () => window.removeEventListener("storage", load);
   }, []);
 
-  return <NormalizationBlockersPanel items={items} />;
+  const clearItems = () => {
+    setItems([]);
+    if (typeof window === "undefined") return;
+    try {
+      window.sessionStorage.removeItem(NORMALIZATION_INSIGHTS_STORAGE_KEY);
+    } catch {
+      // no-op
+    }
+  };
+
+  return <NormalizationBlockersPanel items={items} onClear={clearItems} />;
 }

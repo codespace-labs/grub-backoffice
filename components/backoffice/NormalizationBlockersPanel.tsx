@@ -64,9 +64,11 @@ export function extractNormalizationInsights(items: unknown): NormalizationBatch
 export function NormalizationBlockersPanel({
   items,
   showModuleLink = false,
+  onClear,
 }: {
   items: NormalizationBatchResultItem[];
   showModuleLink?: boolean;
+  onClear?: () => void;
 }) {
   if (items.length === 0) {
     return (
@@ -93,14 +95,25 @@ export function NormalizationBlockersPanel({
             artistas desde CMS e intentar de nuevo.
           </p>
         </div>
-        {showModuleLink ? (
-          <Link
-            href="/backoffice/quality"
-            className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-          >
-            Ver en Calidad →
-          </Link>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-3">
+          {onClear ? (
+            <button
+              type="button"
+              onClick={onClear}
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-accent"
+            >
+              Limpiar
+            </button>
+          ) : null}
+          {showModuleLink ? (
+            <Link
+              href="/backoffice/quality"
+              className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Ver en Calidad →
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       <div className="grid gap-2">
